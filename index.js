@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -40,6 +40,58 @@ async function run() {
       const result = await toyCollection.insertOne(newToy);
       res.send(result);
     })
+
+    app.get('/addtoys/:id', async (req, res) => {
+      const id = req.params.id;
+      const toy = await toyCollection.findOne({ _id: new ObjectId(id) });
+      res.send(toy);
+    })
+
+    app.get('/mytoys/:sellerId', async (req, res) => {
+      const sellerId = req.params.sellerId;
+      console.log(`Fetching toys for sellerId: ${sellerId}`); // Debugging line
+      const myToys = await toyCollection.find({ sellerId }).toArray();
+      console.log(myToys); // Check the data here
+      res.send(myToys);
+    });
+
+    app.get('/update/:id', async (req, res) => {
+      const id = req.params.id;
+      const result = await toyCollection.findOne({ _id: new ObjectId(id) });
+      res.send(result);
+    })
+
+    app.put('/update/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) }
+      const options = { upsert: true };
+      const updatedToy = req.body;
+      const updated = {
+        $set: {
+          pictureUrl: updatedToy.pictureUrl,
+          name: updatedToy.name,
+          sellerName: updatedToy.sellerName,
+          sellerEmail: updatedToy.sellerEmail, 
+          subCategory: updatedToy.subCategory,
+          price: updatedToy.price,
+          rating: updatedToy.rating,
+          quantity: updatedToy.quantity,
+          description: updatedToy.description
+        }
+      }
+
+      const result = await toyCollection.updateOne(filter, updated, options);
+      res.send(result);
+    })
+
+    app.delete('/mytoys/:Id', async (req, res) => {
+      const Id = req.params.Id;
+      const query = { _id: new ObjectId(Id) }
+      const result = await toyCollection.deleteOne(query);
+      res.send(result);
+    });
+
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
